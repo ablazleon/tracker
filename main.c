@@ -224,30 +224,14 @@ void computeMean(fsm_t* this){
 }
 
 void computeAmp(fsm_t* this){       //MAX - MEDIA
-    int r, c;
-    double ampValue[NUM_CHANNELS_ACCEL];
-    double maxValue[NUM_CHANNELS_ACCEL];
-    double suma[NUM_CHANNELS_ACCEL];
-    double meanValues[NUM_CHANNELS_ACCEL];
-    double myRow[SEGMENT_LENGTH];
-    static int n = SEGMENT_LENGTH;
+    int c;
     tracker *p_tracker;
     
     // Retrieve the user data
     p_tracker = (tracker*)(this->user_data);
     
     for (c = 0; c < NUM_CHANNELS_ACCEL; c++) {
-        for(r = 0; r < SEGMENT_LENGTH; r++){
-            myRow[r] = p_tracker->accelBlock[r][c];
-            if(maxValue[c] > myRow[r]){
-                maxValue[c] = myRow[r];
-            }
-            suma[c] += myRow[r];
-        }
-        meanValues[c] = suma[c]/n;
-        
-        ampValue[c] = maxValue[c] - meanValues[c];
-        p_tracker->features[ampIdx[c]] = ampValue[c];
+        p_tracker->features[ampIdx[c]] = p_tracker->features[maxIdx[c]] - p_tracker->features[meanIdx[c]];
     }
 }
 
