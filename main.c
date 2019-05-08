@@ -26,6 +26,8 @@
 /* ************************************************************************** */
 
 /* INLCUDES */
+#include <stdlib.h>     //para max(), min()...
+#include <math.h>
 #include "system.h"
 
 /* VARIABLES */
@@ -162,43 +164,91 @@ void sleep (fsm_t *this) {
 
 void computeMax(fsm_t* this){
     int r, c;
+    double maxValue[NUM_CHANNELS_ACCEL];
+    double myRow[SEGMENT_LENGTH];
     tracker *p_tracker;
-
+    
     // Retrieve the user data
     p_tracker = (tracker*)(this->user_data);
     
     for (c = 0; c < NUM_CHANNELS_ACCEL; c++) {
-        /* ... */
-        /* A completar por el alumno */
-        /* Se puede usar las macros "max()" o "min()" de la librería stdlib */
-        /* ... */
-        p_tracker->features[maxIdx[c]] = maxValue;
+        for(r = 0; r < SEGMENT_LENGTH; r++){
+            myRow[r] = p_tracker->accelBlock[r][c];
+            if(maxValue[c] < myRow[r]){
+                maxValue[c] = myRow[r];
+            }
+        }
+        p_tracker->features[maxIdx[c]] = maxValue[c];
     }
 }
 
 void computeMin(fsm_t* this){
-    /* ... */
-    /* A completar por el alumno */
-    /* ... */
+    int r, c;
+    double minValue[NUM_CHANNELS_ACCEL];
+    double myRow[SEGMENT_LENGTH];
+    tracker *p_tracker;
+    
+    // Retrieve the user data
+    p_tracker = (tracker*)(this->user_data);
+    
+    for (c = 0; c < NUM_CHANNELS_ACCEL; c++) {
+        for(r = 0; r < SEGMENT_LENGTH; r++){
+            myRow[r] = p_tracker->accelBlock[r][c];
+            if(minValue[c] > myRow[r]){
+                minValue[c] = myRow[r];
+            }
+        }
+       
+        p_tracker->features[minIdx[c]] = minValue[c];
+    }
 }
 
 void computeMean(fsm_t* this){
     int r, c;
+    double suma[NUM_CHANNELS_ACCEL];
+    double meanValues[NUM_CHANNELS_ACCEL];
+    static int n = SEGMENT_LENGTH;
+    tracker *p_tracker;
     
+    // Retrieve the user data
+    p_tracker = (tracker*)(this->user_data);
     
     for (c = 0; c < NUM_CHANNELS_ACCEL; c++) {
-        /* ... */
-        /* A completar por el alumno */
-        /* ... */
+        for(r = 0; r < SEGMENT_LENGTH; r++){
+            suma[c] += p_tracker->accelBlock[r][c];
+        }
+        
+        meanValues[c] = suma[c]/n;
         p_tracker->features[meanIdx[c]] = meanValues[c];
     }
 }
 
-void computeAmp(fsm_t* this){
-    /* ... */
-    /* A completar por el alumno */
-    /* Amplitud= maximo - media*/
-    /* ... */
+void computeAmp(fsm_t* this){       //MAX - MEDIA
+    int r, c;
+    double ampValue[NUM_CHANNELS_ACCEL];
+    double maxValue[NUM_CHANNELS_ACCEL];
+    double suma[NUM_CHANNELS_ACCEL];
+    double meanValues[NUM_CHANNELS_ACCEL];
+    double myRow[SEGMENT_LENGTH];
+    static int n = SEGMENT_LENGTH;
+    tracker *p_tracker;
+    
+    // Retrieve the user data
+    p_tracker = (tracker*)(this->user_data);
+    
+    for (c = 0; c < NUM_CHANNELS_ACCEL; c++) {
+        for(r = 0; r < SEGMENT_LENGTH; r++){
+            myRow[r] = p_tracker->accelBlock[r][c];
+            if(maxValue[c] > myRow[r]){
+                maxValue[c] = myRow[r];
+            }
+            suma[c] += myRow[r];
+        }
+        meanValues[c] = suma[c]/n;
+        
+        ampValue[c] = maxValue[c] - meanValues[c];
+        p_tracker->features[ampIdx[c]] = ampValue[c];
+    }
 }
 
 /* Josue: We must create our own compare function.
@@ -224,17 +274,30 @@ void computeMed(fsm_t* this){
 }
 
 void computeVar_Std(fsm_t* this) {
-    /* ... */
-    /* A completar por el alumno */
-    /* ... */
+    int r, c;
+    double myRow[SEGMENT_LENGTH];
+    double numVar[NUM_CHANNELS_ACCEL];      //numerador de la varianza
+    double maxValue[NUM_CHANNELS_ACCEL];
+    double var[NUM_CHANNELS_ACCEL];
+    static double n = SEGMENT_LENGTH;
+    tracker *p_tracker;
+    
+    // Retrieve the user data
+    p_tracker = (tracker*)(this->user_data);
     
     for (c = 0; c < NUM_CHANNELS_ACCEL; c++) {
-        //mean = p_tracker->features ¿? ...
-        /* ... */
-        /* A completar por el alumno */
-        /* ... */
-        p_tracker->features[varIdx[c]] = standardDeviation;
-        p_tracker->features[stdIdx[c]] = sqrt(p_tracker->features[varIdx[c]]);
+        for (r = 0; r < SEGMENT_LENGTH; r++) {
+            if(maxValue[c] < myRow[r]){
+                maxValue[c] = myRow[r];
+            }
+        }
+        for (r = 0; r < SEGMENT_LENGTH; r++) {
+            numVar[c] += pow((maxValue[c] - myRow[r]), 2);   //pow(max, 2)
+        }
+        var[c] = numVar[c]/n;
+        
+        p_tracker->features[varIdx[c]] = var[c];                                //ERROR DEL ENUNCIADO INICIAL: SD -> var(cambiado)
+        p_tracker->features[stdIdx[c]] = sqrt(p_tracker->features[varIdx[c]]);  //var = SD^2
     }    
 }
 
